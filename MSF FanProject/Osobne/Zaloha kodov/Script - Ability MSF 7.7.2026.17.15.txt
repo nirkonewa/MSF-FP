@@ -1,0 +1,211 @@
+function onOpen() {
+  SpreadsheetApp.getUi().createMenu('🚀 MSF Nástroje')
+      .addItem('⚡ Aktualizovať VŠETKO a odoslať do Firebase', 'runOptimizedUpdate')
+      .addToUi();
+}
+
+/**
+ * Hlavná funkcia - stiahne zoznam, zoradí, zapíše do Sheetu a odošle do Firebase.
+ */
+function runOptimizedUpdate() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("DATA");
+  
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert("Chyba: Hárok s názvom 'DATA' neexistuje!");
+    return;
+  }
+  
+  if (sheet.getFilter()) {
+    sheet.getFilter().remove(); 
+  }
+  
+  ss.toast('Sťahujem zoznam postáv...', 'Krok 1/5', -1);
+
+  var listResponse = UrlFetchApp.fetch("https://api-prod.marvelstrikeforce.com/services/api/getCharacterList?lang=en");
+  var allCharacters = JSON.parse(listResponse.getContentText()).data;
+  
+  var playables = [];
+  var summons = [];
+
+  allCharacters.forEach(function(c) {
+    var status = (c.status || "").toLowerCase();
+    if (status === "playable") {
+      playables.push(c);
+    } else if (status === "summon") {
+      summons.push(c);
+    }
+  });
+
+  playables.sort(function(a, b) { return a.name.localeCompare(b.name); });
+  summons.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+  var activeChars = playables.concat(summons);
+
+  ss.toast('Sťahujem detaily a pripravujem Firebase dáta...', 'Krok 2/5', -1);
+
+  var chunkSize = 40; 
+  var allRows = [];
+  var firebasePayload = {}; // Pripravený objekt pre Firebase
+  
+  for (var i = 0; i < activeChars.length; i += chunkSize) {
+    var chunk = activeChars.slice(i, i + chunkSize);
+    var requests = chunk.map(function(char) {
+      return {
+        url: "https://api-prod.marvelstrikeforce.com/services/api/getCharacterbyId?characterId=" + char.id + "&lang=en",
+        muteHttpExceptions: true
+      };
+    });
+
+    var responses = UrlFetchApp.fetchAll(requests);
+
+    responses.forEach(function(res, index) {
+      var charBasicInfo = chunk[index];
+      var processed = processCharacterData(charBasicInfo, res);
+      
+      allRows.push(processed.row); // Dáta pre Google Tabuľku (všetky)
+      
+      // Do Firebase ukladáme len Playable postavy
+      if ((charBasicInfo.status || "").toLowerCase() === "playable") {
+          firebasePayload[charBasicInfo.id] = processed.firebase;
+      }
+    });
+    
+    ss.toast('Spracované ' + Math.min(i + chunkSize, activeChars.length) + ' z ' + activeChars.length, 'Krok 2/5');
+  }
+
+  ss.toast('Mažem staré a zapisujem nové dáta do Tabuľky...', 'Krok 3/5', -1);
+  sheet.clear(); 
+  
+  // Pridaný stĺpec "Status"
+  var headers = [["Meno", "Status", "ID (Slug)", "API Link", "Traits", "Portrait", "Basic", "Basic ICO", "Special", "Special ICO", "Ultimate", "Ultimate ICO", "Passive", "Passive ICO"]];
+  
+  sheet.getRange(1, 1, 1, headers[0].length)
+       .setValues(headers)
+       .setFontWeight("bold")
+       .setBackground("#cfe2f3")
+       .setFontColor("black");
+
+  if (allRows.length > 0) {
+    sheet.getRange(2, 1, allRows.length, allRows[0].length).setValues(allRows);
+  }
+
+  ss.toast('Aplikujem štýly...', 'Krok 4/5', -1);
+  formatSheet(sheet, allRows.length);
+  
+  // ODOVSLANIE DO FIREBASE
+  ss.toast('Odosielam dáta do Firebase...', 'Krok 5/5', -1);
+  var firebaseUrl = "https://msf-fanproject-default-rtdb.europe-west1.firebasedatabase.app/characters.json";
+  
+  var options = {
+    "method": "put",
+    "contentType": "application/json",
+    "payload": JSON.stringify(firebasePayload)
+  };
+  
+  UrlFetchApp.fetch(firebaseUrl, options);
+
+  ss.toast('✅ Hotovo! Dáta sú v Tabuľke aj vo Firebase.', 'ÚSPECH', 5);
+}
+
+/**
+ * Pomocná funkcia: Vracia naraz formát pre Sheet aj čistý JSON pre Firebase
+ */
+function processCharacterData(charInfo, response) {
+  var apiLink = "https://api-prod.marvelstrikeforce.com/services/api/getCharacterbyId?characterId=" + charInfo.id + "&lang=en";
+  var traits = (charInfo.traits || []).concat(charInfo.eventTraits || []).map(function(t) { return t.name; }).join(", ");
+  
+  var statusText = (charInfo.status || "").toLowerCase() === "playable" ? "Playable" : "Summon";
+  
+  var row = [
+    charInfo.name, 
+    statusText, // Nový stĺpec
+    charInfo.id, 
+    apiLink, 
+    traits, 
+    charInfo.portrait ? '=IMAGE("' + charInfo.portrait + '")' : "" 
+  ];
+
+  var abilitiesData = ["", "", "", "", "", "", "", ""]; 
+  var firebaseAbilities = {};
+
+  if (response.getResponseCode() === 200) {
+    try {
+      var json = JSON.parse(response.getContentText());
+      if (json && json.data && json.data.abilityKit) {
+        var kit = json.data.abilityKit;
+        var types = { basic: kit.basic, special: kit.special, ultimate: kit.ultimate, passive: kit.passive };
+        
+        var tempAbilities = [];
+        
+        for (var key in types) {
+          var ability = types[key];
+          if (!ability) {
+            tempAbilities.push("", ""); 
+            firebaseAbilities[key] = { name: "", desc: "", icon: "" };
+          } else {
+            var lvls = ability.levels || {};
+            var maxLvl = lvls["8"] || lvls["7"] || lvls["6"] || lvls["5"] || lvls["1"] || ability;
+            
+            var desc = (maxLvl.description || "").replace(/<[^>]*>/g, ""); 
+            var finalDesc = (ability.name || "Unknown").toUpperCase() + "\n\n" + desc;
+            var iconFormula = ability.icon ? '=IMAGE("' + ability.icon + '")' : "";
+            
+            tempAbilities.push(finalDesc, iconFormula);
+            
+            firebaseAbilities[key] = {
+              name: ability.name || "",
+              desc: desc,
+              icon: ability.icon || ""
+            };
+          }
+        }
+        abilitiesData = tempAbilities;
+      }
+    } catch (e) {
+      console.error("Chyba JSON: " + charInfo.name, e);
+    }
+  }
+  
+  var firebaseObj = {
+    name: charInfo.name,
+    id: charInfo.id,
+    image: charInfo.portrait || "",
+    traits: traits,
+    abilities: firebaseAbilities
+  };
+
+  return {
+    row: row.concat(abilitiesData),
+    firebase: firebaseObj
+  };
+}
+
+/**
+ * Funkcia na grafickú úpravu tabuľky (posunuté stĺpce)
+ */
+function formatSheet(sheet, numRows) {
+  if (numRows === 0) return;
+  var lastCol = 14; 
+
+  sheet.setColumnWidth(1, 150); // Meno
+  sheet.setColumnWidth(2, 80);  // Status
+  sheet.setColumnWidth(3, 120); // ID
+  sheet.setColumnWidth(4, 100); // API
+  sheet.setColumnWidth(5, 200); // Traits
+  
+  [7, 9, 11, 13].forEach(function(col) { sheet.setColumnWidth(col, 350); }); // Textové popisy
+  [6, 8, 10, 12, 14].forEach(function(col) { sheet.setColumnWidth(col, 60); }); // Ikony
+
+  var dataRange = sheet.getRange(2, 1, numRows, lastCol);
+  dataRange.setWrap(true)
+           .setVerticalAlignment("middle")
+           .setHorizontalAlignment("left");
+           
+  [2, 6, 8, 10, 12, 14].forEach(function(col) {
+     sheet.getRange(2, col, numRows, 1).setHorizontalAlignment("center");
+  });
+
+  sheet.setFrozenRows(1);
+  sheet.getRange(1, 1, 1, lastCol).setBackground("#4a86e8").setFontColor("white");
+}

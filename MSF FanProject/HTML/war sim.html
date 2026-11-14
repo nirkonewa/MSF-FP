@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSF Alliance War Room Tracker</title>
+    <style>
+        :root {
+            --bg-color: #0d0f12;
+            --card-bg: #1a1d24;
+            --accent-color: #00d2ff; /* Default Blue pre Defense */
+            --accent-blue: #00d2ff;
+            --accent-red: #ff3366;
+            --text-color: #ffffff;
+            --text-muted: #8a8f9d;
+            --cleared-color: #00ff88;
+            --border-radius: 8px;
+        }
+
+        /* Dynamické farebné témy pre pozadie a sekcie */
+        body.theme-defense {
+            --bg-color: #0b111a;
+            --accent-color: var(--accent-blue);
+        }
+
+        body.theme-offense {
+            --bg-color: #1a0b0e;
+            --accent-color: var(--accent-red);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+            transition: background-color 0.4s ease;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(45deg, var(--accent-color), #ffffff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+
+        /* Navigácia a controls */
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 2px solid #2a2e39;
+            color: var(--text-muted);
+            padding: 10px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .tab-btn.active-def {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(0, 210, 255, 0.15);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.2);
+        }
+
+        .tab-btn.active-off {
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+            background: rgba(255, 51, 102, 0.15);
+            box-shadow: 0 0 12px rgba(255, 51, 102, 0.2);
+        }
+
+        .reset-btn {
+            background-color: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        .reset-btn:hover {
+            background-color: var(--accent-color);
+            color: #000;
+        }
+
+        .reset-all-container {
+            text-align: center;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+
+        .reset-btn.reset-all {
+            border-color: #ff3366;
+            color: #ff3366;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+        }
+
+        .reset-btn.reset-all:hover {
+            background-color: #ff3366;
+            color: #fff;
+        }
+
+        /* Sekcie */
+        .tab-content {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Grid - 3 v rade */
+        .war-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        @media (max-width: 850px) {
+            .war-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Miestnosti (Karty) */
+        .room-card {
+            background-color: var(--card-bg);
+            border: 1px solid #2a2e39;
+            border-radius: var(--border-radius);
+            padding: 12px;
+            position: relative;
+            user-select: none;
+            transition: all 0.25s ease;
+        }
+
+        /* Modré karty pre Defense */
+        body.theme-defense .room-card {
+            background-color: #121824;
+            border-color: #1d2a3d;
+        }
+
+        body.theme-defense .room-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 12px rgba(0, 210, 255, 0.35);
+        }
+
+        /* Červené karty pre Offense */
+        body.theme-offense .room-card {
+            background-color: #241418;
+            border-color: #3d1c24;
+        }
+
+        body.theme-offense .room-card:hover {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 12px rgba(255, 51, 102, 0.4);
+        }
+
+        .room-card.draggable {
+            cursor: grab;
+        }
+
+        .room-card.dragging {
+            opacity: 0.3;
+            border: 2px dashed var(--accent-color);
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #2a2e39;
+            padding-bottom: 5px;
+        }
+
+        body.theme-defense .room-header {
+            border-bottom-color: #1d2a3d;
+        }
+
+        body.theme-offense .room-header {
+            border-bottom-color: #3d1c24;
+        }
+
+        .room-name {
+            font-weight: bold;
+            font-size: 1rem;
+            color: #fff;
+        }
+
+        .fixed-badge {
+            font-size: 0.7rem;
+            background: #2a2e39;
+            color: var(--text-muted);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        body.theme-defense .fixed-badge {
+            background: #1d2a3d;
+        }
+
+        body.theme-offense .fixed-badge {
+            background: #3d1c24;
+        }
+
+        .players-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Player Slot - Hráč vľavo, tlačidlo vpravo */
+        .player-slot {
+            display: flex;
+            align-items: center;
+            background-color: #0f1115;
+            border: 1px solid #2a2e39;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: all 0.2s;
+            justify-content: space-between;
+        }
+
+        body.theme-defense .player-slot {
+            background-color: #0b1018;
+            border-color: #1d2a3d;
+        }
+
+        body.theme-offense .player-slot {
+            background-color: #140a0c;
+            border-color: #3d1c24;
+        }
+
+        .player-slot:focus-within {
+            border-color: var(--accent-color);
+        }
+
+        .player-slot.cleared {
+            background-color: #102117 !important;
+            border-color: var(--cleared-color) !important;
+        }
+
+        .player-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            width: 100%;
+            padding: 0 12px;
+            height: 38px;
+        }
+
+        .player-slot.cleared .player-input {
+            color: var(--cleared-color);
+            text-decoration: line-through;
+        }
+
+        /* Štýlové Tlačidlo vpravo */
+        .clickable-check-zone {
+            width: 90px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+            border-left: 1px solid #2a2e39;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        body.theme-defense .clickable-check-zone {
+            border-left-color: #1d2a3d;
+        }
+
+        body.theme-offense .clickable-check-zone {
+            border-left-color: #3d1c24;
+        }
+
+        .clickable-check-zone:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-text {
+            font-size: 0.75rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            transition: color 0.2s ease;
+        }
+
+        .check-badge {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        /* Stav tlačidla po označení (CLEAR) */
+        .player-slot.cleared .clickable-check-zone {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.25), rgba(0, 255, 136, 0.1));
+            border-left-color: var(--cleared-color) !important;
+        }
+
+        .player-slot.cleared .btn-text {
+            color: var(--cleared-color);
+        }
+
+        .player-slot.cleared .check-badge {
+            background-color: var(--cleared-color);
+            border-color: var(--cleared-color);
+            color: #000;
+            box-shadow: 0 0 8px rgba(0, 255, 136, 0.4);
+        }
+
+        .player-slot.cleared .check-badge::after {
+            content: '✓';
+        }
+    </style>
+</head>
+<body class="theme-defense">
+
+    <header>
+        <h1 id="main-title">Alliance War Defense</h1>
+    </header>
+
+    <div class="controls-container">
+        <div class="tabs">
+            <button class="tab-btn active-def" id="btn-defense" onclick="switchTab('defense')">Defense</button>
+            <button class="tab-btn" id="btn-offense" onclick="switchTab('offense')">Offense</button>
+        </div>
+        <button class="reset-btn" id="reset-current-btn" onclick="resetCurrentTab()">Resetovať Defense</button>
+    </div>
+
+    <!-- DEFENSE TAB -->
+    <div class="tab-content active" id="tab-defense">
+        <div class="war-grid" id="defense-grid"></div>
+    </div>
+
+    <!-- OFFENSE TAB -->
+    <div class="tab-content" id="tab-offense">
+        <div class="war-grid" id="offense-grid"></div>
+    </div>
+
+    <!-- Tlačidlo pre kompletný reset celého trackera -->
+    <div class="reset-all-container">
+        <button class="reset-btn reset-all" onclick="resetWarData()">Resetovať celú vojnu</button>
+    </div>
+
+    <script>
+        const fixedRooms = ["FD-1", "FD-2", "FD-3"];
+        const defaultMovableRooms = [
+            "Bridge", "Reactor", "Cargo Bay", "Hangar",
+            "Armory", "Medbay", "Barracks", "FD-4", "Engineering"
+        ];
+
+        let currentTab = 'defense';
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-defense').classList.toggle('active', tab === 'defense');
+            document.getElementById('tab-offense').classList.toggle('active', tab === 'offense');
+
+            const btnDef = document.getElementById('btn-defense');
+            const btnOff = document.getElementById('btn-offense');
+            const mainTitle = document.getElementById('main-title');
+            const resetCurrentBtn = document.getElementById('reset-current-btn');
+
+            btnDef.className = tab === 'defense' ? 'tab-btn active-def' : 'tab-btn';
+            btnOff.className = tab === 'offense' ? 'tab-btn active-off' : 'tab-btn';
+
+            if (tab === 'defense') {
+                document.body.className = 'theme-defense';
+                mainTitle.innerText = 'Alliance War Defense';
+                resetCurrentBtn.innerText = 'Resetovať Defense';
+            } else {
+                document.body.className = 'theme-offense';
+                mainTitle.innerText = 'Alliance War Offense';
+                resetCurrentBtn.innerText = 'Resetovať Offense';
+            }
+        }
+
+        function saveData() {
+            const data = {
+                defense: getSectionData('defense-grid'),
+                offense: getSectionData('offense-grid')
+            };
+            localStorage.setItem('msf_war_data_v6', JSON.stringify(data));
+        }
+
+        function getSectionData(containerId) {
+            const container = document.getElementById(containerId);
+            const cards = container.querySelectorAll('.room-card');
+            const sectionData = [];
+
+            cards.forEach((card) => {
+                const roomName = card.querySelector('.room-name').innerText;
+                const slots = card.querySelectorAll('.player-slot');
+                
+                const p1 = {
+                    cleared: slots[0].classList.contains('cleared'),
+                    name: slots[0].querySelector('.player-input').value
+                };
+                const p2 = {
+                    cleared: slots[1].classList.contains('cleared'),
+                    name: slots[1].querySelector('.player-input').value
+                };
+
+                sectionData.push({ roomName, p1, p2 });
+            });
+
+            return sectionData;
+        }
+
+        function createRooms(containerId, sectionType, savedData) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            let roomList = [];
+            
+            if (savedData && savedData.length === 12) {
+                roomList = savedData;
+            } else {
+                const fullNames = [...fixedRooms, ...defaultMovableRooms];
+                roomList = fullNames.map(name => ({
+                    roomName: name,
+                    p1: { cleared: false, name: '' },
+                    p2: { cleared: false, name: '' }
+                }));
+            }
+
+            roomList.forEach((data, index) => {
+                const isFixed = index < 3; // FD-1, FD-2, FD-3
+                const roomCard = document.createElement('div');
+                
+                roomCard.className = `room-card ${isFixed ? 'fixed' : 'draggable'}`;
+                if (!isFixed) roomCard.draggable = true;
+
+                roomCard.innerHTML = `
+                    <div class="room-header">
+                        <span class="room-name">${data.roomName}</span>
+                        ${isFixed ? '<span class="fixed-badge">Pevné</span>' : ''}
+                    </div>
+                    <div class="players-container">
+                        ${createPlayerSlotHtml(data.p1)}
+                        ${createPlayerSlotHtml(data.p2)}
+                    </div>
+                `;
+
+                const slots = roomCard.querySelectorAll('.player-slot');
+                slots.forEach(slot => {
+                    const checkZone = slot.querySelector('.clickable-check-zone');
+                    
+                    checkZone.addEventListener('click', () => {
+                        slot.classList.toggle('cleared');
+                        saveData();
+                    });
+
+                    const input = slot.querySelector('.player-input');
+                    input.addEventListener('input', () => saveData());
+                });
+
+                if (!isFixed) {
+                    addDragAndDropEvents(roomCard, container);
+                }
+
+                container.appendChild(roomCard);
+            });
+        }
+
+        function createPlayerSlotHtml(playerData) {
+            return `
+                <div class="player-slot ${playerData.cleared ? 'cleared' : ''}">
+                    <input type="text" class="player-input" placeholder="Hráč" value="${playerData.name}">
+                    <div class="clickable-check-zone" title="Klikni pre overenie / vyčistenie">
+                        <span class="btn-text">${playerData.cleared ? 'CLEAR' : 'CHECK'}</span>
+                        <div class="check-badge"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Drag & Drop
+        let draggedCard = null;
+
+        function addDragAndDropEvents(card, container) {
+            card.addEventListener('dragstart', () => {
+                draggedCard = card;
+                setTimeout(() => card.classList.add('dragging'), 0);
+            });
+
+            card.addEventListener('dragend', () => {
+                if (draggedCard) {
+                    draggedCard.classList.remove('dragging');
+                    draggedCard = null;
+                    saveData();
+                }
+            });
+
+            card.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (!draggedCard) return;
+
+                const targetCard = getTargetCard(container, e.clientX, e.clientY);
+                if (targetCard && targetCard !== draggedCard) {
+                    const allCards = [...container.querySelectorAll('.room-card.draggable')];
+                    const draggedIndex = allCards.indexOf(draggedCard);
+                    const targetIndex = allCards.indexOf(targetCard);
+
+                    if (draggedIndex < targetIndex) {
+                        container.insertBefore(draggedCard, targetCard.nextSibling);
+                    } else {
+                        container.insertBefore(draggedCard, targetCard);
+                    }
+                }
+            });
+        }
+
+        function getTargetCard(container, x, y) {
+            const draggableCards = [...container.querySelectorAll('.room-card.draggable:not(.dragging)')];
+
+            for (const child of draggableCards) {
+                const box = child.getBoundingClientRect();
+                if (x >= box.left && x <= box.right && y >= box.top && y <= box.bottom) {
+                    return child;
+                }
+            }
+            return null;
+        }
+
+        function loadAllData() {
+            const raw = localStorage.getItem('msf_war_data_v6');
+            const data = raw ? JSON.parse(raw) : null;
+
+            createRooms('defense-grid', 'defense', data ? data.defense : null);
+            createRooms('offense-grid', 'offense', data ? data.offense : null);
+        }
+
+        function resetCurrentTab() {
+            const tabName = currentTab === 'defense' ? 'Defense' : 'Offense';
+            if (confirm(`Naozaj chceš vymazať stav iba pre ${tabName}?`)) {
+                const raw = localStorage.getItem('msf_war_data_v6');
+                let data = raw ? JSON.parse(raw) : { defense: null, offense: null };
+                
+                if (currentTab === 'defense') {
+                    data.defense = null;
+                    createRooms('defense-grid', 'defense', null);
+                } else {
+                    data.offense = null;
+                    createRooms('offense-grid', 'offense', null);
+                }
+
+                localStorage.setItem('msf_war_data_v6', JSON.stringify(data));
+            }
+        }
+
+        function resetWarData() {
+            if (confirm("Naozaj chceš vymazať stav a resetovať CELÚ vojnu (Defense aj Offense)?")) {
+                localStorage.removeItem('msf_war_data_v6');
+                loadAllData();
+            }
+        }
+
+        loadAllData();
+    </script>
+</body>
+</html>

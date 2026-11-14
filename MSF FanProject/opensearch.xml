@@ -1,0 +1,5 @@
+<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">
+  <ShortName>Marvel Strike Force Counters FanProject</ShortName>
+  <Description>Vyhľadávanie na webe</Description>
+  <Url type="text/html" template="https://www.vasastranka.sk/search?q={searchTerms}"/>
+</OpenSearchDescription>

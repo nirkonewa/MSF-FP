@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.7">
+    <title>MSF Arena</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top-nav">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="index.html" class="logo-title" style="text-decoration: none;">MARVEL&nbsp;<span class="highlight">STRIKE FORCE</span></a>
+        <span class="sub-location">ARENA</span>
+    </div>
+    <select id="navMenu" class="nav-menu-select" onchange="if(this.value=='home')window.location.href='index.html';">
+        <option value="arena" selected>Arena</option>
+        <option value="home">Domov (Home)</option>
+    </select>
+</header>
+
+<section class="roster-section" style="padding: 20px; max-width: 900px; margin: 0 auto;">
+    <h2 style="color: #ffcc00; margin-bottom: 20px; text-align: center;">ARENA DEF & TOP 10</h2>
+    
+    <!-- Def vyhľadávanie -->
+    <div style="margin-bottom: 30px;">
+        <input type="text" id="arenaSearch" class="search-bar" placeholder="Zadaj def vyhľadávanie v Arene..." style="max-width: 100%;">
+        <div id="arenaSearchresults" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- Top 10 defov -->
+    <div style="background: #081226; border: 1px solid #1a3c61; padding: 20px; border-radius: 8px;">
+        <h3 style="color: #00d2ff; margin-bottom: 15px; text-align: center;">TOP 10 ARENA DEFOV</h3>
+        <div id="top10DefContainer" style="display: flex; flex-direction: column; gap: 10px;">
+            <p style="color: #aaa; text-align: center;">Načítavam top defy...</p>
+        </div>
+    </div>
+</section>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+    import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAYnPOgWFVABldjw1jcoBsZXg9mUFQ71fU",
+        authDomain: "msf-fanproject.firebaseapp.com",
+        databaseURL: "https://msf-fanproject-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "msf-fanproject",
+        storageBucket: "msf-fanproject.firebasestorage.app",
+        messagingSenderId: "872567757703",
+        appId: "1:872567757703:web:3a2f4c7aa082e52d531122"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // Načítanie Top 10 defov a vyhľadávania
+    get(ref(db, 'arena/')).then(snapshot => {
+        const data = snapshot.val() || {};
+        const top10Container = document.getElementById("top10DefContainer");
+        const top10List = data.top10 || [];
+        
+        if (top10List.length > 0) {
+            top10Container.innerHTML = top10List.map((item, idx) => `
+                <div style="padding: 10px; background: #0c1a30; border-bottom: 1px solid #1a3c61; display: flex; justify-content: space-between;">
+                    <span><b>#${idx + 1}</b> ${item.name || item}</span>
+                    <span style="color: #ffcc00;">${item.winRate ? item.winRate + ' WinRate' : ''}</span>
+                </div>
+            `).join("");
+        } else {
+            top10Container.innerHTML = "<p style='color: #aaa; text-align: center;'>Žiadne dáta v Top 10.</p>";
+        }
+
+        const arenaSearch = document.getElementById("arenaSearch");
+        const resultsDiv = document.getElementById("arenaSearchresults");
+        const allDefs = data.defSearch || [];
+
+        arenaSearch.addEventListener("input", (e) => {
+            const term = e.target.value.toLowerCase().trim();
+            if (!term) { resultsDiv.innerHTML = ""; return; }
+            const filtered = allDefs.filter(d => (d.name || "").toLowerCase().includes(term));
+            resultsDiv.innerHTML = filtered.length ? filtered.map(f => `
+                <div style="background: #081226; padding: 10px; margin-bottom: 5px; border-radius: 4px; border: 1px solid #1a3c61;">
+                    <b>${f.name}</b> - Counter: ${f.counter || 'Neuvedené'}
+                </div>
+            `).join("") : "<p style='color: #aaa; text-align: center;'>Nenašli sa žiadne výsledky.</p>";
+        });
+    });
+</script>
+</body>
+</html>

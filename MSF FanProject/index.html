@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.7">
+    <title>MSF Fan Project</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<header class="top-nav">
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="#" class="logo-title" onclick="document.getElementById('navMenu2').value='home'; document.getElementById('navMenu2').dispatchEvent(new Event('change'));">
+            MARVEL&nbsp;<span class="highlight">STRIKE FORCE</span>
+        </a>
+            <div style="display: inline-flex; align-items: center; gap: 8px;">
+            <span class="sub-location">ALLIANCE WAR</span>
+            <span id="pinIcon" title="Pripnúť tento mód" style="cursor: pointer; font-size: 16px; opacity: 0.3; transition: 0.3s;">📌</span>
+        </div>
+    </div>
+    
+    <select id="navMenu2" class="nav-menu-select">
+        <option value="" disabled selected hidden>MENU ☰</option>
+        <option value="home">Home / Postavy</option>
+        <option value="aw">Alliance War</option>
+        <option value="cc">Cosmic Crucible</option>
+        <option value="admin">Admin</option>
+        <option value="chars">Postavy</option>
+        <option value="teams">Tímy</option>
+
+    </select>
+
+    <script type="module" src="../skripty/menu.js"></script>
+    <script type="module" src="script.js"></script>
+</header>
+
+<main id="app-content"></main>
+    <button id="backToTop" title="Hore na vrch">Hore ⇧</button>
+</main>
+</body>
+</html>

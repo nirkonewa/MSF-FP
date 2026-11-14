@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.9">
+    <title>MSF Admin Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Admin špecifické štýly */
+        body { padding-top: 85px; }
+        .admin-container { padding: 20px; max-width: 1200px; margin: auto; font-family: sans-serif; }
+        .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .admin-tab { padding: 12px 25px; background: #112544; border: 1px solid #00509e; color: white; cursor: pointer; font-weight: bold; text-transform: uppercase; border-radius: 4px; transition: 0.2s; }
+        .admin-tab:hover { background: #16305a; }
+        .admin-tab.active { background: #00509e; border-color: #00d2ff; box-shadow: 0 0 10px rgba(0, 210, 255, 0.4); }
+        
+        .admin-section { display: none; background: #081226; padding: 25px; border: 1px solid #1a3c61; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .admin-section.active { display: block; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .form-group { display: flex; flex-direction: column; position: relative; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        .form-group label { margin-bottom: 5px; color: #ffcc00; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px; background: #0c1a30; color: white; border: 1px solid #1a3c61; border-radius: 4px; outline: none; font-family: sans-serif; transition: 0.3s; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #00d2ff; }
+        
+        /* Upozornenia a Validácie */
+        .duplicate-warn { border: 2px solid #e74c3c !important; box-shadow: 0 0 8px rgba(231, 76, 60, 0.6); }
+        .exact-match-input { border: 2px solid #2ecc71 !important; box-shadow: 0 0 8px rgba(46, 204, 113, 0.6); }
+        .status-msg { font-size: 11px; margin-top: 5px; font-weight: bold; }
+        .msg-success { color: #2ecc71; }
+        .msg-warning { color: #e74c3c; }
+
+        .btn-save { background: #28a745; color: white; padding: 12px 25px; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; text-transform: uppercase; transition: 0.2s; }
+        .btn-save:hover { background: #218838; }
+        .btn-edit { background: #00509e; color: white; padding: 6px 12px; border: none; cursor: pointer; font-size: 11px; border-radius: 4px; text-transform: uppercase; margin-right: 5px; }
+        .btn-edit:hover { background: #0070f3; }
+        .btn-delete { background: #dc3545; color: white; padding: 6px 12px; border: none; cursor: pointer; font-size: 11px; border-radius: 4px; text-transform: uppercase; }
+        .btn-delete:hover { background: #c82333; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
+        th, td { border: 1px solid #1a3c61; padding: 12px; text-align: left; }
+        th { background: #112544; color: #4fc3f7; text-transform: uppercase; }
+        tr:nth-child(even) { background: #0c1a30; }
+        tr:hover { background: #16305a; }
+
+        h2 { color: #fff; margin-bottom: 20px; border-bottom: 2px solid #1a3c61; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="logo">MARVEL <span class="highlight">ADMIN</span></div>
+        <nav class="nav-menu">
+            <a href="index.html">Späť na web</a>
+        </nav>
+    </header>
+
+    <div class="admin-container">
+        <div class="admin-tabs">
+            <button class="admin-tab active" data-target="sec-chars">Postavy</button>
+            <button class="admin-tab" data-target="sec-teams">Tímy</button>
+            <button class="admin-tab" data-target="sec-counters">Countery</button>
+        </div>
+
+        <div id="sec-chars" class="admin-section active">
+            <h2>Pridať / Upraviť Postavu</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Meno postavy (Zároveň slúži ako filter)</label>
+                    <input type="text" id="charName" placeholder="Napr. Spider-Man" autocomplete="off">
+                    <div id="charStatus" class="status-msg"></div>
+                </div>
+                <div class="form-group">
+                    <label>URL obrázka</label>
+                    <input type="text" id="charImage" placeholder="https://...">
+                </div>
+                <div class="form-group full-width">
+                    <label>Skupiny / Traity (oddeľ čiarkou)</label>
+                    <input type="text" id="charGroups" placeholder="Napr. Hero, Bio, Spider-Verse, Crucible">
+                </div>
+                <div class="form-group full-width">
+                    <button class="btn-save" id="btnSaveChar" onclick="saveCharacter()">Uložiť Postavu</button>
+                </div>
+            </div>
+            
+            <h2>Zoznam postáv</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Meno</th>
+                        <th>Obrázok</th>
+                        <th>Skupiny</th>
+                        <th style="width: 150px;">Akcia</th>
+                    </tr>
+                </thead>
+                <tbody id="charsTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="sec-teams" class="admin-section">
+            <h2>Pridať / Upraviť Tím</h2>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Názov tímu (Zároveň slúži ako filter)</label>
+                    <input type="text" id="teamName" placeholder="Napr. Secret Defenders" autocomplete="off">
+                    <div id="teamStatus" class="status-msg"></div>
+                </div>
+                <div class="form-group"><label>Postava 1</label><select id="teamMem1" class="char-select"><option value="">Žiadna</option></select></div>
+                <div class="form-group"><label>Postava 2</label><select id="teamMem2" class="char-select"><option value="">Žiadna</option></select></div>
+                <div class="form-group"><label>Postava 3</label><select id="teamMem3" class="char-select"><option value="">Žiadna</option></select></div>
+                <div class="form-group"><label>Postava 4</label><select id="teamMem4" class="char-select"><option value="">Žiadna</option></select></div>
+                <div class="form-group"><label>Postava 5</label><select id="teamMem5" class="char-select"><option value="">Žiadna</option></select></div>
+                <div class="form-group full-width">
+                    <button class="btn-save" id="btnSaveTeam" onclick="saveTeam()">Uložiť Tím</button>
+                </div>
+            </div>
+
+            <h2>Zoznam tímov</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Názov Tímu</th>
+                        <th>Členovia</th>
+                        <th style="width: 150px;">Akcia</th>
+                    </tr>
+                </thead>
+                <tbody id="teamsTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="sec-counters" class="admin-section">
+            <h2>Pridať / Upraviť Counter</h2>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Herný Mód</label>
+                    <select id="counterMode" onchange="checkCounterDuplicate()">
+                        <option value="war">Alliance War</option>
+                        <option value="crucible">Cosmic Crucible</option>
+                        <option value="battleworld">Battleworld</option>
+                        <option value="arena">Arena</option>
+                        <option value="raid">Raids</option>
+                        <option value="blitz">Blitz</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Obranný Tím (DEF)</label>
+                    <select id="counterDef" class="team-select" onchange="checkCounterDuplicate()"><option value="">Vyber tím...</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Útočný Tím (ATK)</label>
+                    <select id="counterAtk" class="team-select" onchange="checkCounterDuplicate()"><option value="">Vyber tím...</option></select>
+                    <div id="counterStatus" class="status-msg"></div>
+                </div>
+                <div class="form-group">
+                    <label>Šanca na Win (%)</label>
+                    <input type="number" id="counterWin" placeholder="Napr. 85" min="0" max="100">
+                </div>
+                <div class="form-group full-width">
+                    <label>Poznámka / Taktika</label>
+                    <textarea id="counterNote" rows="3" placeholder="Zameraj sa najprv na..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <button class="btn-save" id="btnSaveCounter" onclick="saveCounter()">Uložiť Counter</button>
+                </div>
+            </div>
+
+            <h2>Zoznam Counterov</h2>
+            <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                <div class="form-group" style="width: 200px;">
+                    <label>Filter Módov:</label>
+                    <select id="filterMode" onchange="renderCountersTable()">
+                        <option value="war">Alliance War</option>
+                        <option value="crucible">Cosmic Crucible</option>
+                        <option value="battleworld">Battleworld</option>
+                        <option value="arena">Arena</option>
+                        <option value="raid">Raids</option>
+                        <option value="blitz">Blitz</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex-grow: 1;">
+                    <label>Vyhľadať Counter (podľa mena tímu):</label>
+                    <input type="text" id="counterSearch" placeholder="Napr. Gamma..." oninput="renderCountersTable()">
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Obrana (DEF)</th>
+                        <th>Útok (ATK)</th>
+                        <th>Win %</th>
+                        <th>Poznámka</th>
+                        <th style="width: 150px;">Akcia</th>
+                    </tr>
+                </thead>
+                <tbody id="countersTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import update namiesto set - ZABRAŇUJE VYMAZANIU STATOV!
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
+        import { getDatabase, ref, onValue, update, remove, push } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAYnPOgWFVABldjw1jcoBsZXg9mUFQ71fU",
+            authDomain: "msf-fanproject.firebaseapp.com",
+            databaseURL: "https://msf-fanproject-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "msf-fanproject",
+            storageBucket: "msf-fanproject.firebasestorage.app",
+            messagingSenderId: "872567757703",
+            appId: "1:872567757703:web:3a2f4c7aa082e52d531122"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let dbCharacters = {};
+        let dbTeams = {};
+        let dbCounters = {};
+        let currentEditCounterId = null; // Pomocná premenná pre countery
+
+        // Tab routing
+        document.querySelectorAll('.admin-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+                
+                e.target.classList.add('active');
+                document.getElementById(e.target.getAttribute('data-target')).classList.add('active');
+            });
+        });
+
+        // Firebase OnValue Listeners
+        onValue(ref(db, 'characters'), (snapshot) => {
+            dbCharacters = snapshot.val() || {};
+            renderCharsTable();
+            populateCharSelects();
+        });
+
+        onValue(ref(db, 'teams'), (snapshot) => {
+            dbTeams = snapshot.val() || {};
+            renderTeamsTable();
+            populateTeamSelects();
+        });
+
+        onValue(ref(db, 'counters'), (snapshot) => {
+            dbCounters = snapshot.val() || {};
+            renderCountersTable();
+        });
+
+        // ==========================================
+        // 1. POSTAVY (CHARACTERS)
+        // ==========================================
+        const charNameInput = document.getElementById('charName');
+        const charStatus = document.getElementById('charStatus');
+        
+        charNameInput.addEventListener('input', () => {
+            const query = charNameInput.value.toLowerCase().trim();
+            renderCharsTable(query);
+            
+            const key = query.replace(/\s+/g, "");
+            if (key && dbCharacters[key]) {
+                charNameInput.classList.add('exact-match-input');
+                charStatus.innerHTML = "✓ Zhoduje sa! Upravujete existujúci záznam.";
+                charStatus.className = "status-msg msg-success";
+                document.getElementById('btnSaveChar').innerText = "Aktualizovať Postavu";
+                
+                // Predvyplnenie dát
+                document.getElementById('charImage').value = dbCharacters[key].image || "";
+                document.getElementById('charGroups').value = dbCharacters[key].groups || "";
+            } else {
+                charNameInput.classList.remove('exact-match-input');
+                charStatus.innerHTML = "";
+                document.getElementById('btnSaveChar').innerText = "Uložiť Novú Postavu";
+            }
+        });
+
+        window.editCharacter = function(key) {
+            charNameInput.value = dbCharacters[key].name;
+            charNameInput.dispatchEvent(new Event('input')); // Simulácia písania pre aktiváciu farieb
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.saveCharacter = function() {
+            const name = charNameInput.value.trim();
+            const image = document.getElementById('charImage').value.trim();
+            const groups = document.getElementById('charGroups').value.trim();
+            if (!name) return alert("Zadaj meno postavy!");
+            
+            const key = name.toLowerCase().replace(/\s+/g, "");
+            
+            // BEZPEČNÝ UPDATE: Meníme len meno, img a grupy. Staty zostanú!
+            update(ref(db, 'characters/' + key), { 
+                name: name, 
+                image: image,
+                groups: groups
+            });
+            
+            charNameInput.value = "";
+            document.getElementById('charImage').value = "";
+            document.getElementById('charGroups').value = "";
+            charNameInput.dispatchEvent(new Event('input'));
+            alert("Postava úspešne uložená/aktualizovaná!");
+        }
+
+        window.deleteCharacter = function(key) {
+            if(confirm("Naozaj chceš vymazať túto postavu (vrátane jej statov)?")) {
+                remove(ref(db, 'characters/' + key));
+            }
+        }
+
+        function renderCharsTable(filter = "") {
+            const tbody = document.getElementById('charsTableBody');
+            tbody.innerHTML = "";
+            Object.entries(dbCharacters).forEach(([key, char]) => {
+                if (char.name.toLowerCase().includes(filter)) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${char.name}</b></td>
+                            <td>${char.image ? `<img src="${char.image}" width="30" height="30" style="border-radius:4px;">` : 'Bez obrázka'}</td>
+                            <td style="font-size: 11px; color:#aaa;">${char.groups || 'Žiadne'}</td>
+                            <td>
+                                <button class="btn-edit" onclick="editCharacter('${key}')">Upraviť</button>
+                                <button class="btn-delete" onclick="deleteCharacter('${key}')">Vymazať</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function populateCharSelects() {
+            const charOptions = `<option value="">Žiadna</option>` + Object.values(dbCharacters)
+                .sort((a,b) => a.name.localeCompare(b.name))
+                .map(c => `<option value="${c.name}">${c.name}</option>`).join("");
+            
+            document.querySelectorAll('.char-select').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = charOptions;
+                select.value = currentVal;
+            });
+        }
+
+        // ==========================================
+        // 2. TÍMY (TEAMS)
+        // ==========================================
+        const teamNameInput = document.getElementById('teamName');
+        const teamStatus = document.getElementById('teamStatus');
+        const teamSelects = [1,2,3,4,5].map(i => document.getElementById(`teamMem${i}`));
+
+        teamNameInput.addEventListener('input', () => {
+            const query = teamNameInput.value.toLowerCase().trim();
+            renderTeamsTable(query);
+            
+            const key = query.replace(/\s+/g, "-");
+            if (key && dbTeams[key]) {
+                teamNameInput.classList.add('exact-match-input');
+                teamStatus.innerHTML = "✓ Zhoduje sa! Upravujete existujúci tím.";
+                teamStatus.className = "status-msg msg-success";
+                document.getElementById('btnSaveTeam').innerText = "Aktualizovať Tím";
+                
+                const members = dbTeams[key].members || [];
+                for(let i=0; i<5; i++) {
+                    teamSelects[i].value = members[i] || "";
+                }
+                validateTeamDuplicates();
+            } else {
+                teamNameInput.classList.remove('exact-match-input');
+                teamStatus.innerHTML = "";
+                document.getElementById('btnSaveTeam').innerText = "Uložiť Nový Tím";
+            }
+        });
+
+        // Detekcia duplicitných postáv v tíme
+        window.validateTeamDuplicates = function() {
+            const vals = teamSelects.map(s => s.value).filter(v => v !== "");
+            teamSelects.forEach(sel => {
+                if (sel.value !== "" && vals.filter(v => v === sel.value).length > 1) {
+                    sel.classList.add('duplicate-warn');
+                } else {
+                    sel.classList.remove('duplicate-warn');
+                }
+            });
+        }
+        teamSelects.forEach(sel => sel.addEventListener('change', validateTeamDuplicates));
+
+        window.editTeam = function(key) {
+            teamNameInput.value = dbTeams[key].name;
+            teamNameInput.dispatchEvent(new Event('input'));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.saveTeam = function() {
+            const name = teamNameInput.value.trim();
+            if (!name) return alert("Zadaj názov tímu!");
+
+            // Kontrola červených rámikov
+            if(document.querySelector('#sec-teams .duplicate-warn')) {
+                return alert("Oprav duplicitné postavy v tíme pred uložením!");
+            }
+
+            const members = [];
+            teamSelects.forEach(sel => { if(sel.value) members.push(sel.value); });
+
+            const key = name.toLowerCase().replace(/\s+/g, "-");
+            update(ref(db, 'teams/' + key), { name: name, members: members });
+            
+            teamNameInput.value = "";
+            teamSelects.forEach(sel => { sel.value = ""; sel.classList.remove('duplicate-warn'); });
+            teamNameInput.dispatchEvent(new Event('input'));
+            alert("Tím úspešne uložený/aktualizovaný!");
+        }
+
+        window.deleteTeam = function(key) {
+            if(confirm("Naozaj chceš vymazať tento tím?")) remove(ref(db, 'teams/' + key));
+        }
+
+        function renderTeamsTable(filter = "") {
+            const tbody = document.getElementById('teamsTableBody');
+            tbody.innerHTML = "";
+            Object.entries(dbTeams).forEach(([key, team]) => {
+                if (team.name.toLowerCase().includes(filter)) {
+                    const membersStr = (team.members || []).join(" • ");
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b style="color:#ffcc00">${team.name}</b></td>
+                            <td style="color:#e0e6ed; font-size:11px;">${membersStr}</td>
+                            <td>
+                                <button class="btn-edit" onclick="editTeam('${key}')">Upraviť</button>
+                                <button class="btn-delete" onclick="deleteTeam('${key}')">Vymazať</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function populateTeamSelects() {
+            const teamOptions = `<option value="">Vyber tím...</option>` + Object.entries(dbTeams)
+                .sort((a,b) => a[1].name.localeCompare(b[1].name))
+                .map(([key, team]) => `<option value="${key}">${team.name}</option>`).join("");
+            
+            document.querySelectorAll('.team-select').forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = teamOptions;
+                select.value = currentVal;
+            });
+        }
+
+        // ==========================================
+        // 3. COUNTERY (COUNTERS)
+        // ==========================================
+        window.checkCounterDuplicate = function() {
+            const mode = document.getElementById('counterMode').value;
+            const defKey = document.getElementById('counterDef').value;
+            const atkKey = document.getElementById('counterAtk').value;
+            const cStatus = document.getElementById('counterStatus');
+            
+            currentEditCounterId = null; // Reset
+            cStatus.innerHTML = "";
+            document.getElementById('counterDef').classList.remove('exact-match-input');
+            document.getElementById('counterAtk').classList.remove('exact-match-input');
+            document.getElementById('btnSaveCounter').innerText = "Uložiť Nový Counter";
+
+            if (defKey && atkKey && dbCounters[mode]) {
+                // Hľadáme, či už existuje id kde defense == defKey a offense == atkKey
+                const foundEntry = Object.entries(dbCounters[mode]).find(([id, c]) => c.defense === defKey && c.offense === atkKey);
+                
+                if (foundEntry) {
+                    currentEditCounterId = foundEntry[0]; // Našli sme ho, ukladáme si jeho ID
+                    const existingData = foundEntry[1];
+                    
+                    document.getElementById('counterDef').classList.add('exact-match-input');
+                    document.getElementById('counterAtk').classList.add('exact-match-input');
+                    cStatus.innerHTML = "⚠ Pozor: Tento duel už v tomto móde existuje! Načítavam dáta.";
+                    cStatus.className = "status-msg msg-warning";
+                    document.getElementById('btnSaveCounter').innerText = "Aktualizovať Counter";
+                    
+                    document.getElementById('counterWin').value = existingData.winChance || "";
+                    document.getElementById('counterNote').value = existingData.note || "";
+                }
+            }
+        }
+
+        window.editCounter = function(mode, key) {
+            document.getElementById('counterMode').value = mode;
+            
+            const counter = dbCounters[mode][key];
+            document.getElementById('counterDef').value = counter.defense;
+            document.getElementById('counterAtk').value = counter.offense;
+            document.getElementById('counterWin').value = counter.winChance || "";
+            document.getElementById('counterNote').value = counter.note || "";
+            
+            checkCounterDuplicate(); // Týmto sa to vizuálne označí a priradí ID
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        window.saveCounter = function() {
+            const mode = document.getElementById('counterMode').value;
+            const defKey = document.getElementById('counterDef').value;
+            const atkKey = document.getElementById('counterAtk').value;
+            const win = document.getElementById('counterWin').value;
+            const note = document.getElementById('counterNote').value;
+
+            if (!defKey || !atkKey) return alert("Musíš zvoliť obranu aj útok!");
+
+            if (currentEditCounterId) {
+                // Update existujúceho countera
+                update(ref(db, `counters/${mode}/${currentEditCounterId}`), {
+                    defense: defKey, offense: atkKey, winChance: win || 0, note: note || ""
+                });
+            } else {
+                // Nový counter
+                const newRef = push(ref(db, `counters/${mode}`));
+                update(newRef, {
+                    defense: defKey, offense: atkKey, winChance: win || 0, note: note || "", votes: { ez: 0, ok: 0, half: 0, no: 0 }
+                });
+            }
+
+            document.getElementById('counterDef').value = "";
+            document.getElementById('counterAtk').value = "";
+            document.getElementById('counterWin').value = "";
+            document.getElementById('counterNote').value = "";
+            checkCounterDuplicate(); // Vyresetuje farby
+            alert("Counter úspešne uložený/aktualizovaný!");
+        }
+
+        window.deleteCounter = function(mode, key) {
+            if(confirm("Naozaj chceš vymazať tento counter? Vynulujú sa aj jeho hlasy!")) {
+                remove(ref(db, `counters/${mode}/${key}`));
+            }
+        }
+
+        window.renderCountersTable = function() {
+            const mode = document.getElementById('filterMode').value;
+            const searchTxt = document.getElementById('counterSearch').value.toLowerCase().trim();
+            const tbody = document.getElementById('countersTableBody');
+            tbody.innerHTML = "";
+
+            const modeCounters = dbCounters[mode] || {};
+            
+            Object.entries(modeCounters).forEach(([key, counter]) => {
+                const defTeamName = dbTeams[counter.defense] ? dbTeams[counter.defense].name : counter.defense;
+                const atkTeamName = dbTeams[counter.offense] ? dbTeams[counter.offense].name : counter.offense;
+                
+                // Filter vyhľadávania (podľa def alebo atk tímu)
+                if (defTeamName.toLowerCase().includes(searchTxt) || atkTeamName.toLowerCase().includes(searchTxt)) {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td style="color:#ffcc00; font-weight:bold; font-size: 11px;">🛡️ ${defTeamName}</td>
+                            <td style="color:#4fc3f7; font-weight:bold; font-size: 11px;">⚔️ ${atkTeamName}</td>
+                            <td>${counter.winChance}%</td>
+                            <td style="font-size: 11px; color: #aaa;">${counter.note || ''}</td>
+                            <td>
+                                <button class="btn-edit" onclick="editCounter('${mode}', '${key}')">Upraviť</button>
+                                <button class="btn-delete" onclick="deleteCounter('${mode}', '${key}')">Vymazať</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
