@@ -67,6 +67,184 @@
         tr:hover { background: #16305a; }
 
         h2 { color: #fff; margin-bottom: 20px; border-bottom: 2px solid #1a3c61; padding-bottom: 10px; }
+
+
+        /* --- ŠTÝLY PRE COMBAT RULES EDITOR --- */
+.cr-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+  background: #1a1f2e;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #2e374e;
+}
+.cr-toolbar input, .cr-toolbar select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #3b4663;
+  background: #0f131d;
+  color: #fff;
+}
+.cr-legend {
+  display: flex;
+  gap: 15px;
+  font-size: 13px;
+  margin-left: auto;
+}
+.cr-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot-green { width: 12px; height: 12px; border-radius: 50%; background: #22c55e; display: inline-block; }
+.dot-yellow { width: 12px; height: 12px; border-radius: 50%; background: #eab308; display: inline-block; }
+.dot-red { width: 12px; height: 12px; border-radius: 50%; background: #ef4444; display: inline-block; }
+
+.cr-char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #111520;
+  border-radius: 8px;
+  border: 1px solid #2a3246;
+}
+.cr-char-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 6px;
+  border-radius: 8px;
+  background: #1b2131;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+}
+.cr-char-card:hover {
+  transform: translateY(-2px);
+}
+.cr-char-card img {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 6px;
+}
+.cr-char-card .cr-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f1f5f9;
+  line-height: 1.2;
+}
+
+/* Stavové rámiky */
+.cr-status-complete {
+  border: 2px solid #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.25);
+}
+.cr-status-draft {
+  border: 2px solid #eab308;
+  box-shadow: 0 0 8px rgba(234, 179, 8, 0.25);
+}
+.cr-status-empty {
+  border: 2px solid #ef4444;
+  opacity: 0.58;
+  filter: grayscale(45%);
+}
+.cr-status-empty:hover {
+  opacity: 0.85;
+  filter: grayscale(15%);
+}
+
+/* Editor panel */
+.cr-editor-panel {
+  margin-top: 20px;
+  background: #171c2b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 20px;
+  color: #e2e8f0;
+  display: none;
+}
+.cr-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #2d3748;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+.cr-ability-block {
+  background: #1e2538;
+  border: 1px solid #2e3a54;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.cr-ability-block h4 {
+  margin: 0 0 8px 0;
+  color: #38bdf8;
+  display: flex;
+  justify-content: space-between;
+}
+.cr-raw-desc {
+  font-size: 12px;
+  color: #94a3b8;
+  background: #0f131d;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  white-space: pre-line;
+}
+.cr-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+.cr-row label {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+.cr-row select, .cr-row input {
+  background: #0f131d;
+  color: #fff;
+  border: 1px solid #3b4663;
+  border-radius: 5px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.cr-effect-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  background: #131826;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  border-left: 3px solid #6366f1;
+}
+.cr-btn {
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+}
+.cr-btn-add { background: #3b82f6; color: #fff; }
+.cr-btn-del { background: #ef4444; color: #fff; padding: 4px 8px; }
+.cr-btn-draft { background: #eab308; color: #000; }
+.cr-btn-complete { background: #22c55e; color: #000; }
+.cr-btn-reset { background: #64748b; color: #fff; }
     </style>
 </head>
 <body>
@@ -223,6 +401,65 @@
             </div>
         </div>
     </div>
+
+
+    <!-- Tlačidlo do tvojho horného menu v admin.html -->
+<button class="nav-btn" onclick="showSection('sec-combat-rules')">⚔️ Bojové pravidlá (Simulátor)</button>
+
+<!-- Samotná sekcia pre správu Combat Rules -->
+<div id="sec-combat-rules" class="admin-section" style="display:none;">
+  <h2>⚔️ Nastavenie bojových pravidiel (Combat Rules)</h2>
+  
+  <div class="cr-toolbar">
+    <input type="text" id="crSearchInput" placeholder="Hľadať postavu..." oninput="renderCombatRulesGrid()">
+    <select id="crStatusFilter" onchange="renderCombatRulesGrid()">
+      <option value="all">Všetky stavy</option>
+      <option value="complete">🟩 Hotové (Zelené)</option>
+      <option value="draft">🟨 Rozpracované (Žlté)</option>
+      <option value="empty">🟥 Nenastavené (Červené)</option>
+    </select>
+    
+    <div class="cr-legend">
+      <span><i class="dot-green"></i> Hotové (<b id="crCountComplete">0</b>)</span>
+      <span><i class="dot-yellow"></i> Rozpracované (<b id="crCountDraft">0</b>)</span>
+      <span><i class="dot-red"></i> Chýba (<b id="crCountEmpty">0</b>)</span>
+    </div>
+  </div>
+
+  <!-- Mriežka všetkých postáv -->
+  <div id="crCharGrid" class="cr-char-grid"></div>
+
+  <!-- Editor pre vybranú postavu -->
+  <div id="crEditorPanel" class="cr-editor-panel">
+    <div class="cr-editor-header">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <img id="crEditImg" src="" width="54" height="54" style="border-radius:50%;">
+        <div>
+          <h3 id="crEditName" style="margin:0;">Názov postavy</h3>
+          <small id="crEditId" style="color:#94a3b8;"></small>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="cr-btn cr-btn-draft" onclick="saveCombatRule('draft')">🟨 Uložiť ako rozpracované</button>
+        <button class="cr-btn cr-btn-complete" onclick="saveCombatRule('complete')">🟩 Uložiť ako HOTOVÉ</button>
+        <button class="cr-btn cr-btn-reset" onclick="deleteCombatRule()">🗑️ Vymazať pravidlá</button>
+      </div>
+    </div>
+
+    <!-- Aktívne schopnosti: Basic, Special, Ultimate -->
+    <div id="crAbilitiesContainer"></div>
+
+    <!-- Pasívne spúšťače (Triggers) -->
+    <div class="cr-ability-block">
+      <h4>
+        <span>⚡ Pasívne spúšťače a podmienky (Triggers)</span>
+        <button class="cr-btn cr-btn-add" onclick="addTriggerRow()">+ Pridať Trigger</button>
+      </h4>
+      <div id="crPassiveDesc" class="cr-raw-desc"></div>
+      <div id="crTriggersList"></div>
+    </div>
+  </div>
+</div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js";
@@ -860,6 +1097,301 @@ window.renderCountersTable = function() {
                 }
             });
         });
+
+
+        let dbCombatRules = {};
+let currentEditCharId = null;
+
+// Zoznam všetkých herných efektov a akcií pre výberové polia
+const MSF_BUFFS = [
+  "Offense Up", "Defense Up", "Speed Up", "Taunt", "Stealth", "Safeguard",
+  "Immunity", "Deathproof", "Evade", "Deflect", "Counter", "Regeneration", "Charged"
+];
+const MSF_DEBUFFS = [
+  "Offense Down", "Defense Down", "Slow", "Stun", "Ability Block", "Blind",
+  "Heal Block", "Disrupted", "Trauma", "Bleed", "Vulnerable", "Exposed"
+];
+const EFFECT_ACTIONS = [
+  { val: "applyBuff", label: "Pridať Buff" },
+  { val: "applyDebuff", label: "Pridať Debuff" },
+  { val: "clearBuff", label: "Zrušiť Buff (Clear)" },
+  { val: "clearDebuff", label: "Zrušiť Debuff (Cleanse)" },
+  { val: "flipBuff", label: "Preklopiť Buff na Debuff" },
+  { val: "flipDebuff", label: "Preklopiť Debuff na Buff" },
+  { val: "transferDebuff", label: "Preniesť Debuff na nepriateľa" },
+  { val: "spreadDebuff", label: "Rozšíriť Debuffy na susedov" },
+  { val: "speedBar", label: "Zmena Speed Baru (%)" },
+  { val: "speedStat", label: "Zmena Speed Statu (%)" },
+  { val: "heal", label: "Liečenie (% Max HP)" }
+];
+const TARGET_OPTIONS = [
+  { val: "primary", label: "Primárny cieľ" },
+  { val: "primaryAndAdjacent", label: "Primárny + Susedia" },
+  { val: "allEnemies", label: "Všetci nepriatelia" },
+  { val: "lowestHpEnemy", label: "Nepriateľ s najnižším HP" },
+  { val: "highestDamageEnemy", label: "Nepriateľ s najvyšším DMG" },
+  { val: "self", label: "Seba (Self)" },
+  { val: "allAllies", label: "Všetci spojenci" },
+  { val: "lowestHpAlly", label: "Spojenec s najnižším HP" }
+];
+const TRIGGER_EVENTS = [
+  { val: "onSpawn", label: "Na začiatku boja (On Spawn)" },
+  { val: "onTurnStart", label: "Na začiatku ťahu (Turn Start)" },
+  { val: "onTurnEnd", label: "Na konci ťahu (Turn End)" },
+  { val: "onAttack", label: "Pri útoku (On Attack)" },
+  { val: "onDodge", label: "Po úhybe (On Dodge)" },
+  { val: "onBlock", label: "Po bloku (On Block)" },
+  { val: "onCrit", label: "Pri kritickom zásahu (On Crit)" },
+  { val: "onHealthBelow50", label: "Keď HP klesne pod 50%" },
+  { val: "onSelfDeath", label: "Pri vlastnej smrti (On Death)" },
+  { val: "onAllyDeath", label: "Pri smrti spojenca (On Ally Death)" },
+  { val: "onEnemyDeath", label: "Pri smrti nepriateľa (On Enemy Death)" }
+];
+const GAME_MODES = ["ALL", "RAID", "WAR", "ARENA", "CRUCIBLE", "TOWER", "DARK_DIMENSION", "EVENT"];
+
+// 1. Načítanie combatRules z Firebase pri štarte admina
+function initCombatRulesListener() {
+  firebase.database().ref('combatRules').on('value', (snapshot) => {
+    dbCombatRules = snapshot.val() || {};
+    renderCombatRulesGrid();
+  });
+}
+
+// 2. Vykreslenie mriežky postáv so zeleným / žltým / červeným rámikom
+function renderCombatRulesGrid() {
+  const grid = document.getElementById('crCharGrid');
+  if (!grid || typeof dbCharacters === 'undefined') return;
+
+  const search = (document.getElementById('crSearchInput')?.value || "").toLowerCase().trim();
+  const statusFilter = document.getElementById('crStatusFilter')?.value || "all";
+
+  let html = "";
+  let countComplete = 0, countDraft = 0, countEmpty = 0;
+
+  Object.entries(dbCharacters).forEach(([key, char]) => {
+    const rule = dbCombatRules[key];
+    let status = "empty";
+    if (rule && rule.status === "complete") status = "complete";
+    else if (rule && rule.status === "draft") status = "draft";
+
+    if (status === "complete") countComplete++;
+    else if (status === "draft") countDraft++;
+    else countEmpty++;
+
+    if (search && !char.name.toLowerCase().includes(search)) return;
+    if (statusFilter !== "all" && status !== statusFilter) return;
+
+    const borderClass = `cr-status-${status}`;
+    html += `
+      <div class="cr-char-card ${borderClass}" onclick="openCombatRuleEditor('${key}')">
+        <img src="${char.image || ''}" alt="${char.name}" loading="lazy">
+        <div class="cr-name">${char.name}</div>
+      </div>
+    `;
+  });
+
+  document.getElementById('crCountComplete').innerText = countComplete;
+  document.getElementById('crCountDraft').innerText = countDraft;
+  document.getElementById('crCountEmpty').innerText = countEmpty;
+  grid.innerHTML = html || "<p style='color:#94a3b8;'>Žiadne postavy nezodpovedajú filtru.</p>";
+}
+
+// 3. Otvorenie editora pre konkrétnu postavu
+function openCombatRuleEditor(charKey) {
+  currentEditCharId = charKey;
+  const char = dbCharacters[charKey];
+  if (!char) return;
+
+  const existing = dbCombatRules[charKey] || {
+    abilities: {
+      basic: { targetType: "single", chainCount: 0, interruptOnCounter: true, effects: [] },
+      special: { targetType: "single", chainCount: 0, energyCost: 3, startEnergy: 3, effects: [] },
+      ultimate: { targetType: "aoe", chainCount: 0, energyCost: 5, startEnergy: 3, effects: [] }
+    },
+    passiveTriggers: []
+  };
+
+  document.getElementById('crEditorPanel').style.display = 'block';
+  document.getElementById('crEditImg').src = char.image || '';
+  document.getElementById('crEditName').innerText = char.name;
+  document.getElementById('crEditId').innerText = `ID: ${charKey} | Speed: ${char.stats?.speed || '?'} | HP: ${char.stats?.health || '?'}`;
+
+  // Vykreslenie Basic, Special, Ultimate
+  const abContainer = document.getElementById('crAbilitiesContainer');
+  abContainer.innerHTML = "";
+  ["basic", "special", "ultimate"].forEach(abKey => {
+    const rawAb = char.abilities?.[abKey] || {};
+    const savedAb = existing.abilities?.[abKey] || { targetType: "single", chainCount: 0, effects: [] };
+
+    abContainer.innerHTML += `
+      <div class="cr-ability-block" data-ability="${abKey}">
+        <h4>
+          <span>${abKey.toUpperCase()}: ${rawAb.name || 'Bez názvu'}</span>
+          <button class="cr-btn cr-btn-add" onclick="addEffectRow('${abKey}')">+ Pridať efekt</button>
+        </h4>
+        <div class="cr-raw-desc">${rawAb.desc || 'Popis schopnosti nie je k dispozícii.'}</div>
+        <div class="cr-row">
+          <label>Typ útoku:</label>
+          <select id="ab_${abKey}_targetType">
+            <option value="single" ${savedAb.targetType === 'single' ? 'selected' : ''}>Single Target</option>
+            <option value="adjacent" ${savedAb.targetType === 'adjacent' ? 'selected' : ''}>Primary + Adjacent (Susedia)</option>
+            <option value="chain" ${savedAb.targetType === 'chain' ? 'selected' : ''}>Chain (Reťaz)</option>
+            <option value="reboundChain" ${savedAb.targetType === 'reboundChain' ? 'selected' : ''}>Rebound Chain</option>
+            <option value="aoe" ${savedAb.targetType === 'aoe' ? 'selected' : ''}>AoE (Všetci)</option>
+          </select>
+
+          <label>Počet skokov (Chain):</label>
+          <input type="number" id="ab_${abKey}_chainCount" value="${savedAb.chainCount || 0}" min="0" max="10" style="width:60px;">
+
+          ${abKey !== 'basic' ? `
+            <label>Cena energie:</label>
+            <input type="number" id="ab_${abKey}_energyCost" value="${savedAb.energyCost || 4}" min="1" max="15" style="width:60px;">
+            <label>Štart. energia:</label>
+            <input type="number" id="ab_${abKey}_startEnergy" value="${savedAb.startEnergy ?? 2}" min="0" max="15" style="width:60px;">
+          ` : ''}
+        </div>
+        <div id="ab_${abKey}_effectsList"></div>
+      </div>
+    `;
+
+    (savedAb.effects || []).forEach(eff => addEffectRow(abKey, eff));
+  });
+
+  // Pasívka a triggery
+  document.getElementById('crPassiveDesc').innerText = char.abilities?.passive?.desc || 'Žiadny popis pasívnej schopnosti.';
+  const trigList = document.getElementById('crTriggersList');
+  trigList.innerHTML = "";
+  (existing.passiveTriggers || []).forEach(tr => addTriggerRow(tr));
+
+  document.getElementById('crEditorPanel').scrollIntoView({ behavior: 'smooth' });
+}
+
+// Pomocná funkcia na pridanie riadku s efektom do schopnosti
+function addEffectRow(abKey, data = {}) {
+  const container = document.getElementById(`ab_${abKey}_effectsList`);
+  const div = document.createElement('div');
+  div.className = 'cr-effect-item';
+
+  const allEffectsOptions = [
+    ...MSF_BUFFS.map(b => `<option value="${b}" ${data.effect === b ? 'selected' : ''}>[BUFF] ${b}</option>`),
+    ...MSF_DEBUFFS.map(d => `<option value="${d}" ${data.effect === d ? 'selected' : ''}>[DEBUFF] ${d}</option>`)
+  ].join('');
+
+  div.innerHTML = `
+    <select class="eff-action">
+      ${EFFECT_ACTIONS.map(a => `<option value="${a.val}" ${data.action === a.val ? 'selected' : ''}>${a.label}</option>`).join('')}
+    </select>
+    <select class="eff-name">${allEffectsOptions}</select>
+    <select class="eff-target">
+      ${TARGET_OPTIONS.map(t => `<option value="${t.val}" ${data.target === t.val ? 'selected' : ''}>${t.label}</option>`).join('')}
+    </select>
+    <label>Hodnota / Trvanie:</label>
+    <input type="number" class="eff-value" value="${data.value ?? 1}" style="width:65px;" title="Počet kôl, počet buffov alebo % Speed Baru">
+    <label>Šanca %:</label>
+    <input type="number" class="eff-chance" value="${data.chance ?? 100}" min="1" max="100" style="width:60px;">
+    <button class="cr-btn cr-btn-del" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+// Pomocná funkcia na pridanie pasívneho triggeru
+function addTriggerRow(data = {}) {
+  const container = document.getElementById('crTriggersList');
+  const div = document.createElement('div');
+  div.className = 'cr-effect-item';
+  div.style.borderLeftColor = '#f59e0b';
+
+  const allEffectsOptions = [
+    ...MSF_BUFFS.map(b => `<option value="${b}" ${data.effect === b ? 'selected' : ''}>[BUFF] ${b}</option>`),
+    ...MSF_DEBUFFS.map(d => `<option value="${d}" ${data.effect === d ? 'selected' : ''}>[DEBUFF] ${d}</option>`)
+  ].join('');
+
+  div.innerHTML = `
+    <select class="tr-event">
+      ${TRIGGER_EVENTS.map(e => `<option value="${e.val}" ${data.trigger === e.val ? 'selected' : ''}>${e.label}</option>`).join('')}
+    </select>
+    <select class="tr-mode" title="Herný mód">
+      ${GAME_MODES.map(m => `<option value="${m}" ${data.mode === m ? 'selected' : ''}>Mód: ${m}</option>`).join('')}
+    </select>
+    <select class="tr-action">
+      ${EFFECT_ACTIONS.map(a => `<option value="${a.val}" ${data.action === a.val ? 'selected' : ''}>${a.label}</option>`).join('')}
+    </select>
+    <select class="tr-effect">${allEffectsOptions}</select>
+    <select class="tr-target">
+      ${TARGET_OPTIONS.map(t => `<option value="${t.val}" ${data.target === t.val ? 'selected' : ''}>${t.label}</option>`).join('')}
+    </select>
+    <label>Hodnota:</label>
+    <input type="number" class="tr-value" value="${data.value ?? 1}" style="width:60px;">
+    <button class="cr-btn cr-btn-del" onclick="this.parentElement.remove()">✕</button>
+  `;
+  container.appendChild(div);
+}
+
+// 4. Uloženie do Firebase (status: 'draft' alebo 'complete')
+function saveCombatRule(status) {
+  if (!currentEditCharId) return;
+
+  const abilitiesData = {};
+  ["basic", "special", "ultimate"].forEach(abKey => {
+    const effects = [];
+    document.querySelectorAll(`#ab_${abKey}_effectsList .cr-effect-item`).forEach(row => {
+      effects.push({
+        action: row.querySelector('.eff-action').value,
+        effect: row.querySelector('.eff-name').value,
+        target: row.querySelector('.eff-target').value,
+        value: Number(row.querySelector('.eff-value').value),
+        chance: Number(row.querySelector('.eff-chance').value)
+      });
+    });
+
+    abilitiesData[abKey] = {
+      targetType: document.getElementById(`ab_${abKey}_targetType`).value,
+      chainCount: Number(document.getElementById(`ab_${abKey}_chainCount`).value),
+      effects: effects
+    };
+
+    if (abKey !== 'basic') {
+      abilitiesData[abKey].energyCost = Number(document.getElementById(`ab_${abKey}_energyCost`).value);
+      abilitiesData[abKey].startEnergy = Number(document.getElementById(`ab_${abKey}_startEnergy`).value);
+    }
+  });
+
+  const triggers = [];
+  document.querySelectorAll('#crTriggersList .cr-effect-item').forEach(row => {
+    triggers.push({
+      trigger: row.querySelector('.tr-event').value,
+      mode: row.querySelector('.tr-mode').value,
+      action: row.querySelector('.tr-action').value,
+      effect: row.querySelector('.tr-effect').value,
+      target: row.querySelector('.tr-target').value,
+      value: Number(row.querySelector('.tr-value').value)
+    });
+  });
+
+  const payload = {
+    status: status,
+    updatedAt: new Date().toISOString(),
+    abilities: abilitiesData,
+    passiveTriggers: triggers
+  };
+
+  firebase.database().ref(`combatRules/${currentEditCharId}`).set(payload)
+    .then(() => {
+      alert(status === 'complete' ? '✅ Pravidlá uložené ako HOTOVÉ (zelený rámik)!' : '🟨 Pravidlá uložené ako ROZPRACOVANÉ (žltý rámik)!');
+    })
+    .catch(err => alert('Chyba pri ukladaní: ' + err.message));
+}
+
+function deleteCombatRule() {
+  if (!currentEditCharId) return;
+  if (!confirm('Naozaj chceš vymazať bojové pravidlá pre túto postavu?')) return;
+
+  firebase.database().ref(`combatRules/${currentEditCharId}`).remove()
+    .then(() => {
+      document.getElementById('crEditorPanel').style.display = 'none';
+      currentEditCharId = null;
+    });
+}
     </script>
     <script type="module" src="scriptbackup.js"></script>
 </body>
