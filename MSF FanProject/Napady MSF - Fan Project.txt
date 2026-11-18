@@ -9,9 +9,6 @@ Pridat:
 11. moznost skladania timov podla abylit ktore ich navzajum boostuju
 12. prostredie v ktorom sa bude dat upravovat timy a nahadzovat nove // zatial ciastocne
 
-mail.nirka@gmail.com
-159158
-
 ///// BUGY /////
 //opravit bug s ukazovanim modu po prehodeni//03.08.2026.03.00
 //opravit bug pri ulozeni CC neukazuje sim6 po refreshi//03.08.2026.03.00
